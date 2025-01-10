@@ -1,0 +1,2 @@
+[console_scripts]
+skill-sync = skill_sync:cli

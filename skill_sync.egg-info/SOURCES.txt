@@ -1,0 +1,7 @@
+setup.py
+skill_sync.py
+skill_sync.egg-info/PKG-INFO
+skill_sync.egg-info/SOURCES.txt
+skill_sync.egg-info/dependency_links.txt
+skill_sync.egg-info/entry_points.txt
+skill_sync.egg-info/top_level.txt
