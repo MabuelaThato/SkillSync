@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
 import os,time,sys
 from pyrebase import pyrebase
-import click
-import pwinput
+import click, pwinput
 from dotenv import load_dotenv
 import firebase_admin
 import google.cloud
 from firebase_admin import credentials, firestore, auth
-# from validate_input import validate_input
-# try:
-#     from dashboard import dashboard_view
-#     print("Import successful")
-# except Exception as e:
-#     print(f"Import failed: {e}")
 
 load_dotenv()
-person = ''
 
 config = {
     "apiKey": os.environ.get("API_KEY"),
@@ -32,9 +24,11 @@ firebase = pyrebase.initialize_app(config)
 authentication = firebase.auth()
 cred = credentials.Certificate("skillsync-firebase-adminsdk.json")
 app = firebase_admin.initialize_app(cred)
-store = firestore.client()
+db = firestore.client()
 
-users = store.collection("users").stream()
+users = db.collection('users')
+bookings = db.collection("bookings")
+
 class CustomContext:
     def __init__(self):
         self.user = None
@@ -57,12 +51,25 @@ def cli(ctx):
             try:
                 user = authentication.sign_in_with_email_and_password(email, password)
                 if user:
-                    ctx.obj.user = user["localId"]
-                    ctx.obj.db = users
+                    ctx.obj.bookings = bookings.stream()
+                    mentors = []
+                    students = []
+
+                    for person in users.stream():
+                        if user["localId"].strip() == person.to_dict()["user_id"]:
+                            ctx.obj.user = person.to_dict()
+                        elif person.to_dict()["role"] == "mentor":
+                            mentors.append(person)
+                        else:
+                            students.append(person)
+
+                    ctx.obj.mentors = mentors
+                    ctx.obj.students = students
                     break
                 else:
                     click.echo("Failed to login. Please try again.")
-            except:
+            except Exception as e:
+                click.echo(e)
                 try:
                     user_email = auth.get_user_by_email(email)
                     if user_email:
@@ -75,10 +82,10 @@ def cli(ctx):
                     break
 
         while True:
-            print(user["localId"])
-            command = input("-> ").strip().lower()
+            print(ctx.obj.user)
+            command = input("Enter command -> ").strip().lower()
             if command == "logout":
-                click.echo("Exiting the program. Goodbye!")
+                click.secho("Exiting the program. Goodbye!",fg="blue")
                 sys.exit()
             if command in cli.commands:
                 ctx.invoke(cli.commands[command])
@@ -88,8 +95,9 @@ def cli(ctx):
                 click.echo(cli.get_help(ctx))
 
 @click.command()
-def register(help="Register an account on SkillSync"):
-    click.echo(person)
+@click.pass_context
+def register(ctx, help="Register an account on SkillSync"):
+    click.echo(ctx.obj.user)
     click.echo("Please enter your details to register for an account:")
     while True:
         name = input("Fullname: ")
@@ -98,8 +106,8 @@ def register(help="Register an account on SkillSync"):
         if validate_input(password,email):
             try:
                 user = authentication.create_user_with_email_and_password(email,password)
-                doc_ref = store.collection(u'users')
-                doc_ref.add({u'fullname': name, u'email': email, u'role': "student"})
+                doc_ref = db.collection(u'users')
+                doc_ref.add({u'fullname': name, u'email': email, u'role': "student", u'user_id' : user["localId"]})
                 if user:
                     return user
             except Exception as e:
@@ -110,13 +118,47 @@ def register(help="Register an account on SkillSync"):
                 except:
                     click.echo("Failed to register account. Please try again.")
 
-# @click.command()
-# @click.pass_context
-# @click.option("--person_role", required=True, help="The role of the person you would like to book")
-# def book(ctx):
-#     while True: 
-#         group = input("Would you like to book a meeting with a mentor or student?: ").strip().lower()
-#         break
+@click.command()
+@click.pass_context
+def book(ctx):
+    while True:
+        role = click.prompt("Would you like to book a mentor or a student? ").strip().lower()
+        if role == "mentor":
+            people = ctx.obj.mentors
+            break
+        elif role == "student":
+            people = ctx.obj.students
+            break
+        else:
+            click.echo("Please enter 'mentor' or 'student'")
+
+    people_dict = {}
+    for person in people:
+        person_dict = person.to_dict()
+        click.echo(f"-> {person_dict["fullname"]}")
+        people_dict[person_dict["fullname"]] = f'{person_dict["email"]}, {person.id}'
+ 
+    while True:
+        name = click.prompt("Enter the fullname of the person you would like to book").strip()
+        if name in list(people_dict.keys()):
+            break
+        else:
+            click.echo("Please enter a name from the list. E.g. Thato Mabuela")
+
+    email, user_doc_id = people_dict[name].split(",")
+
+    date = click.prompt("Enter a date for the meeting")
+    time = click.prompt("Enter a time for the meeting")
+
+    current_user = ctx.obj.user
+    user_name = current_user["fullname"]
+    user_email = current_user["email"]
+    user_id = current_user["user_id"]
+
+
+    bookings.add({u'date': date, u'time': time, u'person1': f"{name},{email},{user_doc_id}", u'person2': f"{user_name},{user_email},{user_id}"})
+    click.secho(f"Meeting booked successfully",fg="green")
+        
 
 @click.command()
 @click.pass_context
@@ -133,7 +175,7 @@ def test(ctx):
         sys.exit("Invalid command")
 
 cli.add_command(register)
-# cli.add_command(book)
+cli.add_command(book)
 cli.add_command(test)
 
 def validate_input(password, email):
