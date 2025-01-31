@@ -16,7 +16,7 @@ def is_user_available(calendar_id, start_time, end_time):
     events = events_result.get("items", [])
     return len(events) == 0
 
-def make_booking():
+def make_booking(db):
     service = refresh()
     person_role = input("Enter role of person you would like to book (mentor or student): ").strip().lower()
     if person_role not in ['mentor','student']
