@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 import firebase_admin
 import google.cloud
 from firebase_admin import credentials, firestore, auth
+from login import login_user
+from logout import logout_user
+from register import register_user
 
 load_dotenv()
 
@@ -26,95 +29,21 @@ cred = credentials.Certificate("skillsync-firebase-adminsdk.json")
 app = firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-users = db.collection('users')
-
-def refresh_creds():
-    creds = None
-
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    else:
-        return None
-
-    if  not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-    
-    return creds
-        
-
 @click.group()
 def cli():
     pass
 
 @click.command()
 def login(help="Log into SkillSync"):
-    if os.path('lib/firebase-creds.txt'):
-        click.echo("You are already logged in")
-    else:
-        while True:
-            email = input("Email: ")
-            password = pwinput.pwinput()
-            try:
-                user = authentication.sign_in_with_email_and_password(email, password)
-                if user:
-                    try:
-                        with open("lib/firebase-creds.txt", "w") as fire_creds:
-                            fire_creds.write(user['localId'])
-                        break
-                    except FileNotFoundError:
-                        click.echo("Failed to login. Please try again.")   
-                else:
-                    click.echo("Failed to login. Please try again.")
-            except Exception as e:
-                try:
-                    user_email = auth.get_user_by_email(email)
-                    if user_email:
-                        click.echo("Invalid password. Please try again.")
-                except:
-                    click.echo("You do not have an account...")
-                    click.echo("Run 'skill-sync register' to create an account")
-                    break
+    login_user(authentication,db)
 
 @click.command()
 def register(help="Register an account on SkillSync"):
-    click.echo("Please enter your details to register for an account:")
-    while True:
-        name = input("Fullname: ")
-        email = input("Email: ")
-        password = pwinput.pwinput()
-        if validate_input(email):
-            try:
-                user = authentication.create_user_with_email_and_password(email,password)
-                flow = InstalledAppFlow.from_client_secrets_file(
-                        'credentials.json', SCOPES)
-                creds = flow.run_local_server(port=0)
-
-                with open('token.pickle', 'wb') as token:
-                    pickle.dump(creds, token)
-
-                service = build('calendar', 'v3', credentials=creds)
-                new_calendar = {
-                    'summary': 'Skill-sync Calendar',
-                }
-                created_calendar = service.calendars().insert(body=new_calendar).execute()
-                if user:
-                    with open('lib/firebase-creds.txt', 'w') as fire_creds:
-                        fire_creds.write(user['localId'])
-                    doc_ref = db.collection(u'users')
-                    doc_ref.add({u'fullname': name, u'email': email, u'role': "student", u'user_id' : user["localId"]}, u'calendar_id': created_calendar['id'])
-
-            except Exception as e:
-                try:
-                    user_email = auth.get_user_by_email(email)
-                    if user_email:
-                        click.echo("User already exists.")
-                except:
-                    click.echo("Failed to register account. Please try again.")
+    register_user(authentication, db)
 
 @click.command()
 def book():
+    person_role = input("Enter role of person you would like to book")
     desc = input("Description of meeting: ").strip()
     location = input("Meeting location: ").strip()
     num = input("Number of attendees(eg. 1 or 6): ")
@@ -136,39 +65,35 @@ def book():
             click.secho("You can only book meetings for weekdays between 07:00 and 17:00.", fg = 'red')
             click.echo("Please try again.")
         
-        # else:
-        #     event = {
-        #         'summary': 'Python Meeting',
-        #         'location': '800 Howard St., San Francisco, CA 94103',
-        #         'description': 'A meeting to discuss Python projects.',
-        #         'start': {
-        #             'dateTime': start.isoformat() ,
-        #             'timeZone': 'America/Los_Angeles',
-        #         },
-        #         'end': {
-        #             'dateTime': (datetime.utcnow() + timedelta(days=1, hours=1)).isoformat(),
-        #             'timeZone': 'America/Los_Angeles',
-        #         },
-        #     }
-        #     created_event = service.events().insert(calendarId=created_calendar['id'], body=event).execute()
-        #     print(f"Created event: {created_event['id']}")
+        else:
+            now = datetime.datetime.utcnow().isoformat() + 'Z'
+            print('Getting the upcoming 10 events')
+            events_result = service.events().list(calendarId='primary', timeMin=start.isoformat() + 'Z', timeMax = end.isoformat() + 'Z', singleEvents=True).execute()
+            events = events_result.get('items', [])
 
-
-    event = {
-        'summary': 'One on one meeting',
-        'location': location,
-        'description': desc,
-        'start': {
-            'dateTime': (datetime.utcnow() + timedelta(days=1)).isoformat(),
-            'timeZone': 'Africa/Johannesburg',
-        },
-        'end': {
-            'dateTime': (datetime.utcnow() + timedelta(days=1, hours=1)).isoformat(),
-            'timeZone': 'Africa/Johannesburg',
-        },
-    }
-    created_event = service.events().insert(calendarId=created_calendar['id'], body=event).execute()
-    print(f"Created event: {created_event['id']}")
+            if events:
+                click.secho('You already have an event for that specified date or time', fg='red')
+                for event in events:
+                    start = event['start'].get('dateTime', event['start'].get('date'))
+                    click.echo(start, event['summary'])
+            else:
+                event = {
+                    'summary': 'One on one meeting',
+                    'location': location,
+                    'description': desc,
+                    'start': {
+                        'dateTime': (datetime.utcnow() + timedelta(days=1)).isoformat(),
+                        'timeZone': 'Africa/Johannesburg',
+                    },
+                    'end': {
+                        'dateTime': (datetime.utcnow() + timedelta(days=1, hours=1)).isoformat(),
+                        'timeZone': 'Africa/Johannesburg',
+                    },
+                }
+                userid, calendarid = get_info()
+                created_event = service.events().insert(calendarId=calendarid, body=event).execute()
+                click.echo(f"Created event: {created_event['id']}")
+                doc_ref = db.collection('bookings')
         
 
 @click.command()
@@ -177,10 +102,7 @@ def view():
 
 @click.command()
 def logout(help="Log out of Skill-sync"):
-    if os.path('lib/firebase-creds.txt'):
-        os.remove('lib/firebase-creds.txt')
-    else:
-        click.echo("You are not logged in.")
+    logout_user()
 
 cli.add_command(register)
 cli.add_command(login)
