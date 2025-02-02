@@ -11,6 +11,8 @@ from logout import logout_user
 from register import register_user
 from book import make_booking
 from view import view_events
+from delete import delete_event
+from update import update_event
 
 
 load_dotenv()
@@ -59,7 +61,7 @@ def update():
 
 @click.command()
 def cancel():
-    cancel_event(db)
+    delete_event(db)
 
 
 @click.command()
@@ -71,6 +73,8 @@ cli.add_command(login)
 cli.add_command(logout)
 cli.add_command(book)
 cli.add_command(view)
+cli.add_command(update)
+cli.add_command(cancel)
 
 def validate_input(email):
     if "@student.wethinkcode.co.za" in email:

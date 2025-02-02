@@ -3,6 +3,7 @@ import click
 from get_users import get_users
 from get_user import gt_user
 from tzlocal import get_localzone
+from get_calendar_service import get_calendar_service
 
 def is_user_available(calendar_id, start_time, end_time):
     service = get_calendar_service()

@@ -1,3 +1,6 @@
+import click
+from get_calendar_service import get_calendar_service
+
 def get_events(db):
     user = get_user(db)
     service = get_calendar_service()
