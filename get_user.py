@@ -6,7 +6,7 @@ def get_user(db):
                 info.append(line.strip())
         
         user = db.collection('users').document(info[0])
-        return user
+        return user.get()
     except:
         return None
     

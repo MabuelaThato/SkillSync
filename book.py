@@ -87,5 +87,5 @@ def make_booking(db):
         }
     created_event = service.events().insert(calendarId=user['calender_id'], body=event).execute()
     doc_ref = db.collection('bookings').document(created_event['id'])
-    doc_ref.set({u'emails' : f"{user['email']},{available_users[selected_user]['email']}", u'date' : start_time})
+    doc_ref.set({u'emails' : f"{user['email']},{available_users[selected_user]['email']}", u'organiser' : user.id, u'attendees': available_users[selected_user].id, u'date' : start_time})
     click.echo(f"Created event: {created_event['id']}")

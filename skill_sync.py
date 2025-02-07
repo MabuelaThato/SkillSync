@@ -14,6 +14,7 @@ from view import view_events
 from delete import delete_event
 from update import update_event
 from workshop import make_workshop
+from feedback import feedback
 
 
 load_dotenv()
@@ -48,11 +49,11 @@ def register(help="Register an account on SkillSync"):
     register_user(authentication, db)
 
 @click.command()
-def book-meeting():
+def book_meeting():
     make_booking(db)
 
 @click.command()
-def book-workshop():
+def book_workshop():
     make_workshop(db)     
 
 @click.command()
@@ -67,6 +68,10 @@ def update():
 def cancel():
     delete_event(db)
 
+@click.command()
+def give_feedback():
+    feedback(db)
+
 
 @click.command()
 def logout(help="Log out of Skill-sync"):
@@ -75,10 +80,12 @@ def logout(help="Log out of Skill-sync"):
 cli.add_command(register)
 cli.add_command(login)
 cli.add_command(logout)
-cli.add_command(book-meeting)
+cli.add_command(book_meeting)
+cli.add_command(book_workshop)
 cli.add_command(view)
 cli.add_command(update)
 cli.add_command(cancel)
+cli.add_command(give_feedback)
 
 def validate_input(email):
     if "@student.wethinkcode.co.za" in email:
