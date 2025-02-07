@@ -3,10 +3,9 @@ import click
 from get_users import get_users
 from get_user import gt_user
 from tzlocal import get_localzone
-from get_calendar_service import get_calendar_service
 
 def is_user_available(calendar_id, start_time, end_time):
-    service = get_calendar_service()
+    service = refresh_creds()
     events_result = service.events().list(
         calendarId=calendar_id,
         timeMin=start_time.isoformat(),
@@ -18,7 +17,7 @@ def is_user_available(calendar_id, start_time, end_time):
     return len(events) == 0
 
 def make_booking(db):
-    service = refresh()
+    service = refresh_creds()
     person_role = input("Enter role of person you would like to book (mentor or student): ").strip().lower()
     if person_role not in ['mentor','student']
         click.echo("Invalid role entered.")
@@ -87,4 +86,6 @@ def make_booking(db):
         ],
         }
     created_event = service.events().insert(calendarId=user['calender_id'], body=event).execute()
+    doc_ref = db.collection('bookings').document(created_event['id'])
+    doc_ref.set({u'emails' : f"{user['email']},{available_users[selected_user]['email']}", u'date' : start_time})
     click.echo(f"Created event: {created_event['id']}")
