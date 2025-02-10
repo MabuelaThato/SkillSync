@@ -18,10 +18,10 @@ def is_user_available(calendar_id, start_time, end_time):
 
 def make_booking(db):
     service = refresh_creds()
-    person_role = input("Enter role of person you would like to book (mentor or student): ").strip().lower()
-    if person_role not in ['mentor','student']
-        click.echo("Invalid role entered.")
-        return
+    person_role = click.prompt(
+        "Select role of person you would like to book",
+        type=click.Choice(['mentor','student'])
+    )
 
     users = get_users(person_role)
 
@@ -32,7 +32,7 @@ def make_booking(db):
     start_time = tz.localize(datetime.datetime.strptime(s_time, "%Y-%m-%d %H:%M"))
     end_time = tz.localize(datetime.datetime.strptime(e_time, "%Y-%m-%d %H:%M"))
 
-    if start_time.weekday() >=5 or start_time.hour() < 7 or end_time.hour() >= 17:
+    if start_time.weekday() >= 5 or start_time.hour() < 7 or end_time.hour() >= 17:
         click.secho("You can only book meetings for weekdays between 07:00 and 17:00.", fg = 'red')
         click.echo("Please try again.")
         return
