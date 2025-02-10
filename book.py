@@ -17,6 +17,10 @@ def is_user_available(calendar_id, start_time, end_time):
     return len(events) == 0
 
 def make_booking(db):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
+
     service = refresh_creds()
     person_role = click.prompt(
         "Select role of person you would like to book",

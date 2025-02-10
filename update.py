@@ -3,6 +3,10 @@ from get_events import get_events
 from refresh import refresh_creds
 
 def update_event(db):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
+        
     user = get_user(db)
     events = get_events(db)
     service = refresh_creds()

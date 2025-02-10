@@ -1,4 +1,8 @@
 def get_user(db):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
+        
     info = []
     try:
         with open('lib/firebase-creds.txt', 'w') as user_info:

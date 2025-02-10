@@ -1,4 +1,8 @@
 def get_users(role):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
+        
     docs = db.collection('users').where('role', '==', role).stream()
 
     users_dicts = []

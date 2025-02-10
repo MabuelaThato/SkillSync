@@ -2,6 +2,9 @@ import click
 from get_events import get_events
 
 def view_events(db):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
 
     events = get_events(db)
 

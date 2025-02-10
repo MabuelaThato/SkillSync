@@ -2,6 +2,10 @@ import click
 from get_calendar_service import get_calendar_service
 
 def get_events(db):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
+        
     user = get_user(db)
     service = get_calendar_service()
     now = datetime.datetime.utcnow().isoformat()

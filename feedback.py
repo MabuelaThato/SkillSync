@@ -4,6 +4,10 @@ from refresh import refresh_creds
 from send_email import send_email
 
 def feedback(db):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
+        
     user = get_user(db)
     events = get_previous(db)
     selected_event = click.prompt(

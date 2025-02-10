@@ -2,6 +2,9 @@ from refresh import refresh_creds
 import datetime
 
 def get_previous(db):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
 
     docs = db.collection('bookings').where('date', '<', datetime.datetime.now()).stream()  # check correctness
 

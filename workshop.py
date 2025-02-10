@@ -3,6 +3,10 @@ from get_user import get_user
 from get_users import get_users
 
 def make_workshop(db):
+    if not os.path('lib/firebase-creds.txt'):
+        click.echo("You are not logged in")
+        return
+        
     user = get_user(db)
     if user['role'] != 'mentor':
         click.secho("Only mentors can book workshops", fg= 'red')

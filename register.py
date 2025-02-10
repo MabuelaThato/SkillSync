@@ -4,6 +4,10 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 def register_user(auth,db):
+    if os.path('lib/firebase-creds.txt'):
+        click.echo("You are already logged in")
+        return
+        
     click.echo("Please enter your details to register for an account:")
     while True:
         name = input("Fullname: ")
