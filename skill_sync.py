@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
 import os,time,sys
 from pyrebase import pyrebase
 import click, pwinput
 from dotenv import load_dotenv
-import firebase_admin
 import google.cloud
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore, auth, firebase_admin
 from login import login_user
 from logout import logout_user
 from register import register_user
@@ -27,7 +25,7 @@ config = {
     "messagingSenderId": os.environ.get("MESSAGING_SENDER_ID"),
     "appId": os.environ.get("APP_ID"),
     "measurementId": os.environ.get("MEASUREMENT_ID"),
-    "databaseURL": "",
+    "databaseURL": os.environ.get("DATABASE_URL"),
 }
 
 firebase = pyrebase.initialize_app(config)
@@ -49,32 +47,32 @@ def register(help="Register an account on SkillSync"):
     register_user(authentication, db)
 
 @click.command()
-def book_meeting():
+def book_meeting(help="Book one on one meetings"):
     make_booking(db)
 
 @click.command()
-def book_workshop():
+def book_workshop(help="Book all mentors/student/both"):
     make_workshop(db)     
 
 @click.command()
-def view():
+def view(help="view your upcoming events"):
     view_events(db)
 
 @click.command()
-def update():
+def update(help="Update an event"):
     update_event(db)
 
 @click.command()
-def cancel():
+def cancel(help="Cancel an event"):
     delete_event(db)
 
 @click.command()
-def give_feedback():
+def give_feedback(help="Send feedback to attendees"):
     feedback(db)
 
 
 @click.command()
-def logout(help="Log out of Skill-sync"):
+def logout(help="Log out of SkillSync"):
     logout_user()
 
 cli.add_command(register)
