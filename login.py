@@ -1,8 +1,8 @@
-import os, click
+import os, click,pwinput
 
 def login_user(auth, db):
-    if os.path('lib/firebase-creds.txt'):
-        click.echo("You are already logged in")
+    if os.path.exists('lib/firebase-creds.txt'):
+        click.secho("You are already logged in",  fg="green")
     else:
         email = input("Email: ")
         password = pwinput.pwinput()
@@ -20,10 +20,5 @@ def login_user(auth, db):
             else:
                 click.echo("Failed to login. Please try again.")
         except Exception as e:
-            try:
-                user_email = auth.get_user_by_email(email)
-                if user_email:
-                    click.echo("Invalid password. Please try again.")
-            except:
-                click.echo("You do not have an account...")
-                click.echo("Run 'skill-sync register' to create an account")
+            click.echo("You do not have an account or invalid password. Please try again.")
+            click.echo("Run 'skill-sync register' to register an account")

@@ -1,24 +1,11 @@
 from refresh import refresh_creds
-import click
+import click, datetime,os
 from get_users import get_users
-from get_user import gt_user
-from tzlocal import get_localzone
-
-def is_user_available(calendar_id, start_time, end_time):
-    service = refresh_creds()
-    events_result = service.events().list(
-        calendarId=calendar_id,
-        timeMin=start_time.isoformat(),
-        timeMax=end_time.isoformat(),
-        singleEvents=True,
-        orderBy="startTime"
-    ).execute()
-    events = events_result.get("items", [])
-    return len(events) == 0
+from get_user import get_user
 
 def make_booking(db):
-    if not os.path('lib/firebase-creds.txt'):
-        click.echo("You are not logged in")
+    if not os.path.exists('lib/firebase-creds.txt'):
+        click.secho("You are not logged in", fg="red")
         return
 
     service = refresh_creds()
@@ -27,22 +14,25 @@ def make_booking(db):
         type=click.Choice(['mentor','student'])
     )
 
-    users = get_users(person_role)
+    users = get_users(person_role,db)
+    current_user = get_user(db)
 
-    s_time = input("Start time (format: YYYY-MM-DD HH:MM): ").strip()
-    e_time = input("End time (format: YYYY-MM-DD HH:MM): ").strip()
+    date = input('Event date(DD-MM-YYYY): ').strip()
+    start_time = input('Event start time (HH-MM): ').strip()
+    end_time = input('Event end time (HH-MM): ').strip()
 
-    tz = get_localzone()
-    start_time = tz.localize(datetime.datetime.strptime(s_time, "%Y-%m-%d %H:%M"))
-    end_time = tz.localize(datetime.datetime.strptime(e_time, "%Y-%m-%d %H:%M"))
+    start_hour = datetime.datetime.strptime(f'{date} {start_time}', "%d-%m-%Y %H:%M")
+    end_hour = datetime.datetime.strptime(f'{date} {end_time}', "%d-%m-%Y %H:%M")
 
-    if start_time.weekday() >= 5 or start_time.hour() < 7 or end_time.hour() >= 17:
-        click.secho("You can only book meetings for weekdays between 07:00 and 17:00.", fg = 'red')
-        click.echo("Please try again.")
+    if start_hour.weekday() >= 5 or start_hour.hour < 7 or end_hour.hour > 17:
+        click.echo("Invalid time, meetings can only take place on weekdays between 07:00 to 17:00.")
         return
     
-    events_result = service.events().list(calendarId='primary', timeMin=start.isoformat(), timeMax = end.isoformat(), singleEvents=True).execute()
-    events = events_result.get('items', [])
+    time_min = start_hour.isoformat() + 'Z'
+    time_max = end_hour.isoformat() + 'Z'
+
+    event_result = service.events().list( calendarId='primary', timeMin=time_min, timeMax=time_max, singleEvents=True).execute()
+    events = event_result.get('items', [])
 
     if events:
         click.secho('You already have an event for that specified date or time', fg='red')
@@ -50,16 +40,11 @@ def make_booking(db):
             start = event['start'].get('dateTime', event['start'].get('date'))
             click.echo(start, event['summary'])
         return
-
+    
     available_users = {}
 
     for user in users:
-        if is_user_available(user['calendar_id'], start_time, end_time):
-            available_users[user['fullname']] = user
-    
-    if not available_users:
-        click.echo("No users are available for this time slot.")
-        return
+        available_users[user['fullname']] = user
     
     selected_user = click.prompt(
         "Select a user",
@@ -69,27 +54,25 @@ def make_booking(db):
     title = input("Meeting title: ").strip()
     desc = input("Description of meeting: ").strip()
     location = input("Meeting location: ").strip()
-
-    user = get_user(db)
-
-    event = {
-        'summary': title,
-        'location': location,
-        'description': desc,
-        'start': {
-            'dateTime': start_time.isoformat(),
-            'timeZone': str(tz),
-        },
-        'end': {
-            'dateTime': end_time.isoformat(),
-            'timeZone': str(tz),
-        },
-        "attendees": [
-            {"email": user['email']}, 
-            {"email": available_users[selected_user]['email']},
-        ],
-        }
-    created_event = service.events().insert(calendarId=user['calender_id'], body=event).execute()
-    doc_ref = db.collection('bookings').document(created_event['id'])
-    doc_ref.set({u'emails' : f"{user['email']},{available_users[selected_user]['email']}", u'organiser' : user.id, u'attendees': available_users[selected_user].id, u'date' : start_time})
-    click.echo(f"Created event: {created_event['id']}")
+    attendees = [current_user['email'], available_users[selected_user]['email']]
+    
+    event = {'summary': title,
+            'description': desc,
+             'location' : location,
+             'start':{'dateTime': start_hour.isoformat(), 'timeZone': 'UTC+2'},
+             'end':{'dateTime': end_hour.isoformat(), 'timeZone': 'UTC+2'},
+             'attendees': [{'email': email.strip() for email in attendees}],
+             'reminders': {'useDefault': False,
+                            'overrides' : [{'method':'email', 'minutes': 24 * 60},
+                                            {'method': 'popup', 'minutes': 15},
+                                            ],
+                            },
+            }    
+    try:
+        created_event = service.events().insert(calendarId='primary', body=event,sendUpdates='all').execute()
+        doc_ref = db.collection('bookings').document(created_event['id'])
+        doc_ref.set({u'emails' : f"{current_user['email']},{available_users[selected_user]['email']}", u'organiser' : current_user['id'], u'attendee': available_users[selected_user]['id'], u'date' : date, u'time' : start_time})
+        click.secho(f"Created event: {created_event['summary']}", fg='green')
+    except Exception as e:
+        click.secho(f'An error occured: {e}', fg='red')
+    

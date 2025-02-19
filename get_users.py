@@ -1,6 +1,8 @@
-def get_users(role):
-    if not os.path('lib/firebase-creds.txt'):
-        click.echo("You are not logged in")
+import os,click
+
+def get_users(role,db):
+    if not os.path.exists('lib/firebase-creds.txt'):
+        click.secho("You are not logged in", fg="red")
         return
         
     docs = db.collection('users').where('role', '==', role).stream()
