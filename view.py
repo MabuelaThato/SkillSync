@@ -18,4 +18,4 @@ def view_events(db):
         time = time.split(":")
         click.secho(f'{event['summary']}:', fg='blue')
         click.echo(f"Date : {date}")
-        click.echo(f"Time : {time[0]}:{time[1]}")
+        click.echo(f"Time : {int(time[0]) + 2}:{time[1]}")
