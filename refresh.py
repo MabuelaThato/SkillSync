@@ -25,10 +25,23 @@ def refresh_creds():
         click.secho("You are not yet registered.")
         return None
 
-    if  not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+    if creds:
+        try:
+            creds.refresh(Request()) 
+            service = build('calendar', 'v3', credentials=creds)
+            return service
+            
+        except Exception:
+            os.remove(f'{info[0]}.pickle')
+            SCOPES = ['https://www.googleapis.com/auth/calendar',
+                    'https://www.googleapis.com/auth/calendar.events'
+                    ]
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            credentials = flow.run_local_server(port=0)
 
-    service = build('calendar', 'v3', credentials=creds)
-    
-    return service
+            with open(f'{info[0]}.pickle', 'wb') as token:
+                pickle.dump(credentials, token)
+
+            service = build('calendar', 'v3', credentials=credentials)
+            return service

@@ -5,11 +5,16 @@ def get_users(role,db):
         click.secho("You are not logged in", fg="red")
         return
         
-    docs = db.collection('users').where('role', '==', role).stream()
+    docs = db.collection('users').stream()
 
     users_dicts = []
 
     for doc in docs:
-        users_dicts.append(doc.to_dict())
+        doc = doc.to_dict()
+        if role == 'all':
+            users_dicts.append(doc)
+        else:
+            if doc["role"] == role:
+                users_dicts.append(doc)
     
     return users_dicts

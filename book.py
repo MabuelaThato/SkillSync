@@ -36,9 +36,6 @@ def make_booking(db):
 
     if events:
         click.secho('You already have an event for that specified date or time', fg='red')
-        for event in events:
-            start = event['start'].get('dateTime', event['start'].get('date'))
-            click.echo(start, event['summary'])
         return
     
     available_users = {}
