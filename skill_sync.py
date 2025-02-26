@@ -1,9 +1,4 @@
-import os,time,sys
-from pyrebase import pyrebase
-import click, pwinput
 from dotenv import load_dotenv
-import google.cloud
-from firebase_admin import credentials, firestore, auth, firebase_admin
 from login import login_user
 from logout import logout_user
 from register import register_user
@@ -13,7 +8,9 @@ from delete import delete_event
 from update import update_event
 from workshop import make_workshop
 from feedback import feedback
-
+import pyrebase,click,os
+from firebase_admin import credentials, firestore
+import firebase_admin
 
 load_dotenv()
 
@@ -38,41 +35,41 @@ db = firestore.client()
 def cli():
     pass
 
-@click.command()
-def login(help="Log into SkillSync"):
+@click.command(help="Log into SkillSync")
+def login():
     login_user(authentication,db)
 
-@click.command()
-def register(help="Register an account on SkillSync"):
+@click.command(help="Register an account on SkillSync")
+def register():
     register_user(authentication, db)
 
-@click.command()
-def book_meeting(help="Book one on one meetings"):
+@click.command(help="Book one on one meetings")
+def book_meeting():
     make_booking(db)
 
-@click.command()
-def book_workshop(help="Book all mentors/student/both"):
+@click.command(help="Book all mentors/student/both")
+def book_workshop():
     make_workshop(db)     
 
-@click.command()
-def view(help="view your upcoming events"):
+@click.command(help="View your upcoming events")
+def view():
     view_events(db)
 
-@click.command()
-def update(help="Update an event"):
+@click.command(help="Update an event")
+def update():
     update_event(db)
 
-@click.command()
-def cancel(help="Cancel an event"):
+@click.command(help="Cancel an event")
+def cancel():
     delete_event(db)
 
-@click.command()
-def give_feedback(help="Send feedback to attendees"):
+@click.command(help="Send feedback to attendees")
+def give_feedback():
     feedback(db)
 
 
-@click.command()
-def logout(help="Log out of SkillSync"):
+@click.command(help="Log out of SkillSync")
+def logout():
     logout_user()
 
 cli.add_command(register)

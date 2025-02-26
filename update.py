@@ -1,66 +1,61 @@
-import click
+import click,os, datetime
 from get_events import get_events
 from refresh import refresh_creds
 
 def update_event(db):
-    if not os.path('lib/firebase-creds.txt'):
-        click.echo("You are not logged in")
+    if not os.path.exists('lib/firebase-creds.txt'):
+        click.secho("You are not logged in", fg="red")
         return
         
-    user = get_user(db)
     events = get_events(db)
-    service = refresh_creds()
-    selected_event = click.prompt(
-        "Select the event you want to update",
-        type=click.Choice(events)
-    )
 
-    click.echo("What would you like to update?")
-    options = {
-        "1": "summary",
-        "2": "description",
-        "3": "location",
-        "4": "start time",
-        "5": "end time"
+    count = 0
+    for event in events:
+        start = event['start'].get('dateTime', event['start'].get('date'))
+        start = start.split("T")
+        date, time = start[0], start[1].split("+")[0]
+        time = time.split(":")
+        click.secho(f'{count}.{event['summary']}:', fg='blue')
+        click.echo(f"Date : {date}")
+        click.echo(f"Time : {time[0]}:{time[1]}")
+        count += 1
+        
+    try:
+        choice = int(input("Enter the number of the event you would like to update:").strip())
+    except ValueError:
+        click.echo(f"Invalid input. Enter a number (from 0 to {len(events)})")
+        return
+
+    selected_event = list(events)[choice]
+
+    service = refresh_creds()
+
+    date = input('Event date(DD-MM-YYYY): ').strip()
+    start_time = input('Event start time (HH-MM): ').strip()
+    end_time = input('Event end time (HH-MM): ').strip()
+    start_hour = datetime.datetime.strptime(f'{date} {start_time}', "%d-%m-%Y %H:%M")
+    end_hour = datetime.datetime.strptime(f'{date} {end_time}', "%d-%m-%Y %H:%M")
+
+    if start_hour.weekday() >= 5 or start_hour.hour < 7 or end_hour.hour > 17:
+        click.echo("Invalid time, meetings can only take place on weekdays between 07:00 to 17:00.")
+        return
+    
+    selected_event["start"] = {
+            'dateTime': start_hour.isoformat(),
+            'timeZone': 'UTC+2'
+        }
+    selected_event["end"] = {
+        'dateTime': end_hour.isoformat(),
+        'timeZone': 'UTC+2'
     }
 
-    for key, value in options.items():
-        click.echo(f"{key}. {value}")
-
-    choice = input("Enter the number of the field you want to update: ").strip()
-
-    updated_event = selected_event.copy()
-
-    if choice == "1":
-        updated_event["summary"] = input("Enter new event title: ").strip()
-    elif choice == "2":
-        updated_event["description"] = input("Enter new event description: ").strip()
-    elif choice == "3":
-        updated_event["location"] = input("Enter new event location: ").strip()
-    elif choice == "4":
-        tz = get_localzone()
-        time = input("Enter new start time (YYYY-MM-DD HH:MM): ").strip()
-        start_time = tz.localize(datetime.datetime.strptime(time, "%Y-%m-%d %H:%M"))
-        updated_event["start"] = {
-            "dateTime": start_time.isoformat(),
-            "timeZone": str(tz)
-        }
-    elif choice == "5":
-        tz = get_localzone()
-        time = input("Enter new end time (YYYY-MM-DD HH:MM): ").strip()
-        end_time = tz.localize(datetime.datetime.strptime(time, "%Y-%m-%d %H:%M"))
-        updated_event["end"] = {
-            "dateTime": end_time.isoformat(),
-            "timeZone": str(tz)
-        }
-    else:
-        click.echo("Invalid choice. No changes made.")
 
     updated_event = service.events().update(
-        calendarId=user["calendar_id"],
-        eventId=updated_event["id"],
-        body=updated_event
+        calendarId="primary",
+        eventId=selected_event["id"],
+        body=selected_event,
+        sendUpdates="all" 
     ).execute()
 
-    click.echo(f"Updated event: {updated_event['summary']}")
+    click.secho(f"Updated event: {updated_event['summary']}", fg='green')
 
