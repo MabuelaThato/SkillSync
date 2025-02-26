@@ -1,8 +1,7 @@
 import click, os, datetime
 from refresh import refresh_creds
-from get_user import get_user
 
-def get_events(db):
+def get_events():
     if not os.path.exists('lib/firebase-creds.txt'):
         click.secho("You are not logged in", fg="red")
         return

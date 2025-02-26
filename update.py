@@ -4,12 +4,12 @@ from refresh import refresh_creds
 from rich.console import Console
 from rich.table import Table
 
-def update_event(db):
+def update_event():
     if not os.path.exists('lib/firebase-creds.txt'):
         click.secho("You are not logged in", fg="red")
         return
         
-    events = get_events(db)
+    events = get_events()
 
     console = Console()
 

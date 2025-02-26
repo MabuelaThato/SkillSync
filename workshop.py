@@ -2,7 +2,6 @@ import click,datetime,os
 from get_user import get_user
 from get_users import get_users
 from refresh import refresh_creds
-from tzlocal import get_localzone
 
 def make_workshop(db):
     if not os.path.exists('lib/firebase-creds.txt'):
@@ -77,6 +76,4 @@ def make_workshop(db):
             } 
 
     created_event = service.events().insert(calendarId='primary', body=event, sendUpdates="all" ).execute()
-    doc_ref = db.collection('bookings').document(created_event['id'])
-    doc_ref.set({u'emails' : f"{[email for email in emails]}", u'organiser' : user['id'], u'date' : start})
     click.secho(f"Created event: {created_event['summary']}", fg='green')

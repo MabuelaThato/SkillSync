@@ -3,13 +3,13 @@ from get_events import get_events
 from rich.console import Console
 from rich.table import Table
 
-def view_events(db):
+def view_events():
     if not os.path.exists('lib/firebase-creds.txt'):
         click.secho("You are not logged in", fg="red")
         return
 
     console = Console()
-    events = get_events(db)
+    events = get_events()
     table = Table(title="Upcoming events (max 5)")
     table.add_column("No.", justify="center")
     table.add_column("Title", justify="center")

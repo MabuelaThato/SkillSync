@@ -37,7 +37,7 @@ def cli():
 
 @click.command(help="Log into SkillSync")
 def login():
-    login_user(authentication,db)
+    login_user(authentication)
 
 @click.command(help="Register an account on SkillSync")
 def register():
@@ -53,15 +53,15 @@ def book_workshop():
 
 @click.command(help="View your upcoming events")
 def view():
-    view_events(db)
+    view_events()
 
 @click.command(help="Update an event")
 def update():
-    update_event(db)
+    update_event()
 
 @click.command(help="Cancel an event")
 def cancel():
-    delete_event(db)
+    delete_event()
 
 @click.command(help="Send feedback to attendees")
 def give_feedback():

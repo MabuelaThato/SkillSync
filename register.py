@@ -1,5 +1,4 @@
 from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
 import click,os,pickle,pwinput
 from googleapiclient.discovery import build
 

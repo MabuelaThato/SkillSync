@@ -1,4 +1,4 @@
-import smtplib,os
+import smtplib
 
 def send_email(sender,receiver, password, message, subject):
     server = smtplib.SMTP_SSL("smtp.gmail.com",465)

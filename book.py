@@ -67,8 +67,6 @@ def make_booking(db):
             }    
     try:
         created_event = service.events().insert(calendarId='primary', body=event,sendUpdates='all').execute()
-        doc_ref = db.collection('bookings').document(created_event['id'])
-        doc_ref.set({u'emails' : f"{current_user['email']},{available_users[selected_user]['email']}", u'organiser' : current_user['id'], u'attendee': available_users[selected_user]['id'], u'date' : date, u'time' : start_time})
         click.secho(f"Created event: {created_event['summary']}", fg='green')
     except Exception as e:
         click.secho(f'An error occured: {e}', fg='red')

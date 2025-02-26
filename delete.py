@@ -1,16 +1,15 @@
 import click,os
 from get_events import get_events
 from refresh import refresh_creds
-from get_user import get_user
 from rich.console import Console
 from rich.table import Table
 
-def delete_event(db):
+def delete_event():
     if not os.path.exists('lib/firebase-creds.txt'):
         click.secho("You are not logged in", fg="red")
         return
         
-    events = get_events(db)
+    events = get_events()
     service = refresh_creds()
     console = Console()
 
