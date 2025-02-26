@@ -1,21 +1,31 @@
+import click, os, datetime
 from refresh import refresh_creds
-import datetime
 
-def get_previous(db):
-    if not os.path('lib/firebase-creds.txt'):
-        click.echo("You are not logged in")
+def get_previous():
+    if not os.path.exists('lib/firebase-creds.txt'):
+        click.secho("You are not logged in", fg="red")
         return
+    
+    service = refresh_creds()
 
-    docs = db.collection('bookings').where('date', '<', datetime.datetime.now()).stream()  # check correctness
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
+    start = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(weeks=4)).isoformat(timespec='seconds')
 
-    users_dicts = []
+    try:
+        events_result = service.events().list(
+            calendarId='primary',
+            timeMin= start,
+            timeMax=now,
+            maxResults=5,
+            singleEvents=True,
+            orderBy='startTime',
+        ).execute()
 
-    for doc in docs:
-        users_dicts.append(doc.to_dict())
+        events = events_result.get('items', [])
 
-    #Add code to order them
+        events.sort(key=lambda e: e['start'].get('dateTime', e['start'].get('date')), reverse=True)
 
-    if len(users_dicts) > 5:
-        users_dicts = users_dicts[:5]
-
-    return users_dicts
+        return events
+    except Exception as e:
+        click.secho(f"Error retrieving events: {e}", fg='red')
+        return None
